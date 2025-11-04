@@ -22,7 +22,7 @@
 
 1. **克隆仓库**:
    ```bash
-   git clone https://github.com/songbingrong/mcp-bosszp.git
+   git clone https://github.com/mucsbr/mcp-bosszp.git
    cd mcp-bosszp
    ```
 
