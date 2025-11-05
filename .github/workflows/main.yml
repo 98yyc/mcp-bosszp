@@ -2,20 +2,20 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ main ]  # 在推送到 main 分支时触发
-  pull_request:         # 在创建 PR 时触发
     branches: [ main ]
-  workflow_dispatch:    # 允许手动触发
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: mcp-bosszp
-  DOCKER_REGISTRY: docker.io  # 默认使用 Docker Hub
+  DOCKER_REGISTRY: ghcr.io  # 使用 GitHub Container Registry
   LATEST_TAG: latest
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       packages: write
       contents: read
 
@@ -29,12 +29,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Login to Docker Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          # username: ${{ secrets.DOCKERHUB_USERNAME }}
-          # password: ${{ secrets.DOCKERHUB_TOKEN }}
-          # 如需使用 GitHub Container Registry，注释上面两行，取消下面注释
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -43,22 +40,22 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: 
-            # ${{ env.DOCKER_REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
-          # 如需使用 GHCR，替换为：
-            ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          tags: 
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
             type=sha,format=long
             type=semver,pattern={{version}}
             type=ref,event=branch
             ${{ env.LATEST_TAG }}
+          # 添加上下文信息（可选但推荐）
+          flavor: |
+            latest=true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile  # 明确指定 Dockerfile 位置
+          file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}  # 仅在非 PR 时推送
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
